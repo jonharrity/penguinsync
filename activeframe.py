@@ -17,7 +17,7 @@ class ActiveFrame(tk.Frame):
         for i in range(len(self.listing)):
             label = tk.Label(self, text=self.listing[i])
             label.grid(row=i, column=0)
-            label.bind('<Button-1', self.on_click)
+            label.bind('<Button-1>', self.on_click)
             
             
     def set_focus(self, widget):

@@ -13,7 +13,7 @@ START_DIR = os.path.dirname(os.path.realpath(__file__)) + "/data"
 
 def count_save_files():
     count = 0
-    for file_name in ['adr', 'did', 'lsy']:
+    for file_name in ['adr', 'did', 'lsy', 'msf']:
         path = START_DIR + '/' + file_name
         if os.path.isfile(path):
             count += 1
@@ -38,12 +38,17 @@ def create_save_files():
     adr = open(START_DIR + '/adr', 'wb')
     pickle.dump([], adr)
     adr.close()
+    
+    #managed_subfolders: list
+    msf = open(START_DIR + '/msf', 'wb')
+    pickle.dump([], msf)
+    msf.close()
 
 
 
 def main():
     
-    if count_save_files() < 3:
+    if count_save_files() < 4:
         print("missing save files. remaking all.")
         create_save_files()
     
@@ -62,6 +67,29 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
