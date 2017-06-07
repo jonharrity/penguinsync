@@ -24,6 +24,15 @@ class HomeFrame(tk.Frame):
         
         self.add_widgets()
         
+        self.start_sync_timer()
+        
+        
+        
+    def start_sync_timer(self):
+        import threading
+        minutes = 5
+        seconds = minutes * 60
+        threading.Timer(seconds, self.sync)
         
         
     def add_widgets(self):
@@ -69,6 +78,8 @@ class HomeFrame(tk.Frame):
         self.sync_server.sync()
         self.sync_button['state'] = 'normal'
         self.update_sync_time()
+        
+        self.start_sync_timer()
         
     def make_active_frame(self):
         self.active_frame = activeframe.ActiveFrame(self, self.sync_server)

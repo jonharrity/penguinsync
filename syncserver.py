@@ -195,7 +195,7 @@ class SyncServer:
     
     def update_file(self, path):
         media = MediaFileUpload(path, resumable=True)
-        self.drive_service.files().update(fileId=self.drive_ids[path], media_body=media.execute())
+        self.drive_service.files().update(fileId=self.drive_ids[path], media_body=media).execute()
         print("completed: update file %s" % path)
     
     
@@ -291,11 +291,12 @@ class SyncServer:
     def detect_new_files(self):
         for folder in self.managed_subfolders:
             for path in os.listdir(folder):
+                path = folder + '/' + path
                 if os.path.isfile(path):
                     if not path in self.drive_ids.keys():
                         self.add_new_file(path)
                 else:
-                    if not path in self.managed_subfolders():
+                    if not path in self.managed_subfolders:
                         self.add_new_dir(path)
                         
             
