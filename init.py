@@ -1,10 +1,12 @@
 
 import os
+import sys
 
 import tkinter as tk
 
 import syncserver
 import homeframe
+import httplib2
 
 START_DIR = os.path.dirname(os.path.realpath(__file__)) + "/data"
 
@@ -51,9 +53,14 @@ def main():
     if count_save_files() < 4:
         print("missing save files. remaking all.")
         create_save_files()
+            
+    try:
+        sync_server = syncserver.SyncServer(START_DIR)
+    except httplib2.ServerNotFoundError:
+        print("unable to connect to server. exiting")
+        sys.exit()
+        
     
-    
-    sync_server = syncserver.SyncServer(START_DIR)
     print('completed: server init')
     
     frame = tk.Tk()

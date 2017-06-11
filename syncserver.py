@@ -40,9 +40,9 @@ todo:
         - O(N^2) with current organization to validate each file in last_synced ??
         
 *    recursively add  nested subfolders (currently does not check when adding folders)
-    
+
 """
-    
+
 
 
 class SyncServer:
@@ -54,8 +54,9 @@ class SyncServer:
         self.last_synced_time = 'error'
         
         self.init_drive_service()#self.drive_service
-        self.load_config_data()#self.drive_parent_id
         
+        self.load_config_data()#self.drive_parent_id
+                
         self.drive_ids = self.load_drive_ids()#self.drive_ids
         self.last_synced = self.load_last_synced()#self.last_synced
         self.active_dirs = self.load_active_dirs()#self.active_dirs
@@ -176,13 +177,17 @@ class SyncServer:
         
         
     def detect_unsynced_files(self):
+        paths_to_remove = []
         for path in self.last_synced.keys():
             try:
                 if time.mktime(self.last_synced[path]) - os.path.getmtime(path) < 0:
                     self.unsynced_files.add(path)
             except os.error:
                 print("file removal detected of path %s" % path)
-                self.remove_path_from_monitoring(path)
+                paths_to_remove.append(path)
+                
+        for path in paths_to_remove:
+            self.remove_path_from_monitoring(path)
                 
                 
                 
@@ -235,22 +240,29 @@ class SyncServer:
             self.active_dirs.remove(path)
             self.save_active_dirs()
         
-        if os.path.isfile(path):
-            self.last_synced.pop(path)
-            self.drive_ids.pop(path)
-        else:
+        if path in self.managed_subfolders:#path is folder
             self.managed_subfolders.remove(path)
-            for folder in self.managed_subfolders:
+            #remove subpaths from monitoring
+            i = 0
+            while i < len(self.managed_subfolders):
+                folder = self.managed_subfolders[i]
                 if len(folder) <= path:
-                    continue
+                    i += 1
                 else:
                     if folder[:len(path)] == path:
-                        self.managed_subfolders.remove(folder)
+                        self.managed_subfolders.pop(i)
+
                         
             for file in self.get_machine_subfiles(path):
-                self.last_synced.pop(file, None)
-                self.drive_ids.pop(file, None)
-
+                try:
+                    self.last_synced.pop(file, None)
+                    self.drive_ids.pop(file, None)
+                except:
+                    pass
+        else:#path is a file
+            self.last_synced.pop(path)
+            self.drive_ids.pop(path)
+                
         self.save_last_synced()
         self.save_drive_ids()
         self.save_managed_subfolders()
