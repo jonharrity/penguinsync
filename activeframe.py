@@ -8,6 +8,7 @@ class ActiveFrame(tk.Frame):
     def __init__(self, master, sync_server):
         tk.Frame.__init__(self, master)
         
+#         self['bg'] = '#d7f1f4'
         self.selected = None
         self.listing = sync_server.active_dirs.copy()
         self.populate_list()

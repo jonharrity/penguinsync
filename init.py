@@ -3,10 +3,12 @@ import os
 import sys
 
 import tkinter as tk
+from tkinter import ttk
 
 import syncserver
 import homeframe
 import httplib2
+import explorerframe
 
 START_DIR = os.path.dirname(os.path.realpath(__file__)) + "/data"
 
@@ -50,22 +52,34 @@ def create_save_files():
 
 def main():
     
+    
     if count_save_files() < 4:
         print("missing save files. remaking all.")
         create_save_files()
             
-    try:
-        sync_server = syncserver.SyncServer(START_DIR)
-    except httplib2.ServerNotFoundError:
-        print("unable to connect to server. exiting")
-        sys.exit()
+#     try:
+#         sync_server = syncserver.SyncServer(START_DIR)
+#     except httplib2.ServerNotFoundError:
+#         print("unable to connect to server. exiting")
+#         sys.exit()
         
     
     print('completed: server init')
     
     frame = tk.Tk()
-    home = homeframe.HomeFrame(frame, sync_server)
-    home.pack()
+    frame.wm_title("Penguin Sync")
+    frame.tk_setPalette(background='#eff8f9')
+    
+#     notebook = ttk.Notebook(frame)
+    
+#     home = homeframe.HomeFrame(notebook, sync_server)
+#     explorer = explorerframe.ExplorerFrame(notebook)
+#     
+#     notebook.add(home, text="Home")
+#     notebook.add(explorer, text="Files")
+#     
+#     notebook.pack(fill=tk.BOTH, expand=1)
+    explorerframe.ExplorerFrame(frame).pack()
     
     print('completed: homeframe init')
     frame.mainloop()

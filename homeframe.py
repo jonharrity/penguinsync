@@ -37,22 +37,35 @@ class HomeFrame(tk.Frame):
         
     def add_widgets(self):
         
-        tk.Label(self, text="Google account: <account_name>").grid(row=0, sticky='W')        
-        self.sync_button = tk.Button(self, text='sync now', command=self.sync)
-        self.sync_button.grid(row=0, column=2)
+        cloud_sync_label = tk.Label(self, text="Penguin Sync")
+        cloud_sync_label['fg'] = 'blue'
+        cloud_sync_label['font'] = ('Arial', 17)
+        cloud_sync_label['pady'] = 30
+        cloud_sync_label.grid(row=0)
+        
+        tk.Button(self, text='about').grid(row=1)
+        tk.Button(self, text='preferences').grid(row=1, column=1, pady=20)
         
         self.sync_time_label = tk.Label(self)
-        self.sync_time_label.grid(row=1, column=2, sticky='E')
+        self.sync_time_label.grid(row=2, column=2, sticky='E')
         self.update_sync_time()
+        self.sync_button = tk.Button(self, text='sync now', command=self.sync)
+        self.sync_button.grid(row=3, column=2)
+        
+        tk.Label(self, text="<account_name>@gmail.com").grid(row=0, column=1)        
         
         
-        tk.Label(self, text="Saving to drive folder Drive Client Storage").grid(row=2, sticky='W')
-        tk.Label(self, text="Syncing every 5 minutes").grid(row=3, sticky='W')
-        tk.Label(self).grid(row=4)
+        tk.Label(self, text="Saving to drive folder Drive Client Storage").grid(row=3, pady=30)
+#         tk.Label(self, text="Syncing every 5 minutes").grid(row=3, sticky='W')
         
-        tk.Label(self, text="Syncing directories").grid(row=5, column=0, sticky='W')
-        tk.Button(self, text="add", command=self.add_active).grid(row=5, column=1)
-        tk.Button(self, text="remove selected", command=self.remove_active).grid(row=5, column=2)
+        
+        self.sync_list_frame = tk.Frame(self, pady=0)
+        self.sync_list_frame['bg'] = '#d7f1f4'
+        tk.Label(self.sync_list_frame, text="Syncing directories", bg='#d7f1f4').grid(row=0, column=0, sticky='W')
+        tk.Button(self.sync_list_frame, text="add", command=self.add_active).grid(row=0, column=1)
+        tk.Button(self.sync_list_frame, text="remove selected", command=self.remove_active).grid(row=0, column=2)
+        
+        self.sync_list_frame.grid(row=4)
         
         self.make_active_frame()
 
@@ -60,9 +73,13 @@ class HomeFrame(tk.Frame):
         
         
     def update_sync_time(self):
-        self.sync_time_label['text'] = ('last synced: ' + 
-                time.strftime('%m/%d %I:%M%p', 
-                self.sync_server.last_synced_time))
+        last_time = self.sync_server.last_synced_time
+        if type(last_time) == time.struct_time: 
+            self.sync_time_label['text'] = ('last synced: ' + 
+                    time.strftime('%m/%d %I:%M%p', 
+                    last_time))
+        else:
+            self.sync_time_label['text'] = 'last synced:'
         
     def add_active(self, response=-1):
         if response == -1:
@@ -82,8 +99,8 @@ class HomeFrame(tk.Frame):
         self.start_sync_timer()
         
     def make_active_frame(self):
-        self.active_frame = activeframe.ActiveFrame(self, self.sync_server)
-        self.active_frame.grid(row=6, ipady=80)
+        self.active_frame = activeframe.ActiveFrame(self.sync_list_frame, self.sync_server)
+        self.active_frame.grid(row=1, ipady=80)
         
     def remove_active(self):
         selected = self.active_frame.get_selected()
