@@ -15,6 +15,9 @@ from oauth2client import tools
 from oauth2client import client
 
 
+import argparse
+flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
+
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/drive-python-quickstart.json
@@ -25,12 +28,6 @@ APPLICATION_NAME = 'Drive API Python Quickstart'
 CONFIG_FILE_NAME = 'config.json'
 CONFIG_KEYS = ['base_folder_id']
 
-
-try:
-    import argparse
-    flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
-except ImportError:
-    flags = None
 
 
 """
@@ -50,28 +47,24 @@ todo:
 class SyncServer:
     
     
-    def __init__(self, save_path):
-        
+    def __init__(self, save_path, sync_callback, enable_drive_service=True):
+                
         self.save_path = save_path
         self.last_synced_time = 'error'
+        self.callback_finish_sync = sync_callback
         
-        self.init_drive_service()#self.drive_service
+        self.drive_service_is_active = False
         
-        self.load_config_data()#self.drive_parent_id
-                
-#         self.drive_ids = self.load_drive_ids()#self.drive_ids
-#         self.last_synced = self.load_last_synced()#self.last_synced
-#         self.active_dirs = self.load_active_dirs()#self.active_dirs
-#         self.managed_folders = self.load_managed_folders()#self.managed_folders
-
+        if enable_drive_service:
+            self.init_drive_service()#self.drive_service
+                        
         self.drive_ids = driveids.DriveIds()
         self.last_synced = lastsynced.LastSynced()
         self.managed_folders = managedfolders.ManagedFolders()
-        self.active_dirs = self.load_active_dirs()
         
         self.unsynced_files = set()
         self.sync()
-        
+                
         
     def load_config_data(self):
         data = self.get_config_data()
@@ -110,12 +103,22 @@ class SyncServer:
         
         
     def init_drive_service(self):
-        credentials = self.get_credentials()
-        http = credentials.authorize(httplib2.Http())
-        self.drive_service = discovery.build('drive', 'v3', http=http)
+        try:
+            credentials = self.get_credentials()
+            http = credentials.authorize(httplib2.Http())
+            self.drive_service = discovery.build('drive', 'v3', http=http)
+            self.load_config_data()#self.drive_parent_id
+            self.drive_service_is_active = True
+        except:
+            self.drive_service_is_active = False
+            
+            
+            
         
-        
-        
+    def ask_user_login(self):
+        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES, 'redirect.url/fromclient')
+        flow.user_agent = APPLICATION_NAME    
+            
     def get_credentials(self):
         home_dir = os.path.expanduser('~')
         credential_dir = os.path.join(home_dir, '.credentials')
@@ -127,11 +130,9 @@ class SyncServer:
         store = Storage(credential_path)
         credentials = store.get()
         if not credentials or credentials.invalid:
-            flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
-            flow.user_agent = APPLICATION_NAME
-            if flags:
-                credentials = tools.run_flow(flow, store, flags)
-            print('Storing credentials to ' + credential_path)
+            raise Exception('no valid saved credentials')
+            
+            
         return credentials
     
     
@@ -147,19 +148,6 @@ class SyncServer:
 #         file.close()
         self.managed_folders.save()
     
-    
-    def load_active_dirs(self):
-        file = open(self.save_path + "/adr", 'rb')
-        active_dirs = pickle.load(file)
-        file.close()
-        return active_dirs
-    
-    def save_active_dirs(self):
-        file = open(self.save_path + "/adr", 'wb')
-        pickle.dump(self.active_dirs, file)
-        file.close()
-
-        
     def load_drive_ids(self):
         file = open(self.save_path + "/did", 'rb')
         drive_ids = pickle.load(file)
@@ -211,19 +199,23 @@ class SyncServer:
         media = MediaFileUpload(path, resumable=True)
         self.drive_service.files().update(fileId=self.drive_ids[path], media_body=media).execute()
         self.last_synced[path] = time.localtime()
-        print("completed: update file %s" % path)
     
     
     def create_file(self, path):
+        file_size = os.path.getsize(path)
+        if file_size == 0:
+            file = open(path, 'wb')
+            file.write('\n'.encode('UTF-8'))
+            file.close()
+        
         media = MediaFileUpload(path, resumable=True)
         file_metadata = {
             "name": path.split('/')[-1],
             "parents": [ self.drive_parent_id ]
                         }
         result = self.drive_service.files().create(body=file_metadata, media_body=media, 
-                                                   fields='id').execute()
-                                                   
-        print('completed: create file %s' % path)
+                                                    fields='id').execute()
+                                                    
     
         return result['id']
     
@@ -246,10 +238,6 @@ class SyncServer:
     
     
     def remove_path_from_monitoring(self, path):
-        if path in self.active_dirs:
-            self.active_dirs.remove(path)
-            self.save_active_dirs()
-        
         if path in self.managed_folders.keys():#path is folder
             self.managed_folders.remove(path)
             #remove subpaths from monitoring
@@ -276,23 +264,21 @@ class SyncServer:
         self.save_last_synced()
         self.save_drive_ids()
         self.save_managed_folders()
-                
-    
-    
-    def add_new_active(self, path):
-        
-        self.active_dirs.append(path)
-        self.save_active_dirs()
-        
-        if os.path.isdir(path):
-            self.add_new_dir(path)
-        else:
-            self.add_new_file(path)
-        
+ 
             
     def add_new_dir(self, path, do_add_all):
+        
+        
+        if path in self.managed_folders:
+            print('requested add dir %s, but folder is already listed for syncing')
+            return
+        
 
         self.managed_folders.append(path)
+        
+        
+        if not self.drive_service_is_active:
+            return
         
         if do_add_all:
             for subfile in self.get_machine_subfiles(path):
@@ -304,14 +290,28 @@ class SyncServer:
         self.save_managed_folders()
             
     def add_new_file(self, path):
-        new_id = self.create_file(path)
         
-        self.drive_ids[path] = new_id
-        self.last_synced[path] = time.localtime()
-
-        self.save_drive_ids()
-        self.save_last_synced()
+        if path in self.drive_ids.keys():
+            print('requested add path %s, but path is already listed for syncing' % path)
+            return
         
+        
+        if not self.drive_service_is_active:
+            return
+        
+        
+        try:
+            new_id = self.create_file(path)
+            
+            print('created file...')
+            
+            self.drive_ids[path] = new_id
+            self.last_synced[path] = time.localtime()
+    
+        except:
+            
+            print('error while adding %s' % path)
+         
     def detect_new_files(self):
         for folder in self.managed_folders:
             for path in os.listdir(folder):
@@ -327,12 +327,25 @@ class SyncServer:
             
             
     def sync(self):
-        self.detect_new_files()
+        
+        if not self.drive_service_is_active:
+            return
+        
+#         self.detect_new_files()
         self.detect_unsynced_files()
         self.sync_all_unsynced()
         self.last_synced_time = time.localtime()
             
         print('completed: successful sync; t=%s' % str(self.last_synced_time))
+            
+            
+        self.callback_finish_sync()
+            
+            
+            
+            
+            
+            
             
             
             

@@ -5,11 +5,12 @@ import tkinter.messagebox as msgbox
 import managedfolders, driveids, lastsynced
 
 import os
+from os.path import expanduser
 
 
 class FolderFrame(tk.Frame):
     
-    def __init__(self, master, callback, syncserver=None):
+    def __init__(self, master, callback, syncserver):
         tk.Frame.__init__(self, master)
         self['bd'] = 3
         self.callback = callback
@@ -34,15 +35,17 @@ class FolderFrame(tk.Frame):
 
         
     def handle_add_folder(self):
+        os.chdir(expanduser('~'))#start at home directory
         folder_path = filedialog.askdirectory()
         if folder_path == () or folder_path == '':
             pass
         else:            
             add_all = msgbox.askyesno(title='Add folder ' + folder_path,
             message='Do you want to sync every file in this folder?')
-            
+                        
             if self.sync_server == None:
                 return
+            print('adding folder: ' + folder_path)
             self.sync_server.add_new_dir(folder_path, add_all)      
             self.refresh_widgets()
         
@@ -68,12 +71,10 @@ class FolderFrame(tk.Frame):
                 return
             
             do_ask_nested = False
-            nested_folders = self.get_nested_folders(folder)
-            if nested_folders:
-                for nested_folder in nested_folders:
-                    if nested_folder in self.managed_folders: 
-                        do_ask_nested = True
-                        break
+            for path in self.get_nested_folders(folder):
+                do_ask_nested = True
+                break
+                path#get rid of that warning
             
             remove_nested = False
             if do_ask_nested:
@@ -83,6 +84,14 @@ class FolderFrame(tk.Frame):
             
             self.remove_files_in_folder(folder, remove_nested)
             self.refresh_widgets()
+
+    def get_nested_folders(self, base):
+        for other_path in self.managed_folders:
+            if base != other_path and self.is_folder_contained(base, other_path):
+                yield other_path
+    
+    def is_folder_contained(self, base, child):
+        return child[:len(base)] == base
                 
                 
     def remove_files_in_folder(self, folder, remove_nested):
@@ -102,7 +111,7 @@ class FolderFrame(tk.Frame):
         #remove nested folders not directly in folder
         if remove_nested:
             for managed_folder in self.managed_folders:
-                if managed_folder[:len(folder)] == folder:
+                if self.is_folder_contained(folder, managed_folder):
                     self.remove_files_in_folder(managed_folder, remove_nested)
             
             
@@ -127,7 +136,9 @@ class FolderFrame(tk.Frame):
         tk.Button(button_frame, text='Remove selected folder', background='#b2eef4', font=8,
                   command=self.handle_remove_folder).grid(row=0, column=1)
         button_frame.grid(row=0)
-        tk.Label(self, text='Folders', font=4).grid(row=1, sticky='W')
+        folders_label = tk.Label(self, text='Folders', font=4)
+        folders_label.grid(row=1, sticky='W')
+        folders_label.focus_set()
         self.add_disposable_widgets()
         
         
