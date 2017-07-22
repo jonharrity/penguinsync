@@ -65,6 +65,8 @@ class SyncServer:
         self.unsynced_files = set()
         self.sync()
                 
+                
+        self.done_init = True
         
     def load_config_data(self):
         data = self.get_config_data()
@@ -111,9 +113,6 @@ class SyncServer:
             self.drive_service_is_active = True
         except:
             self.drive_service_is_active = False
-            
-            
-            
         
     def ask_user_login(self):
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES, 'redirect.url/fromclient')
@@ -327,7 +326,7 @@ class SyncServer:
             
             
     def sync(self):
-        
+              
         if not self.drive_service_is_active:
             return
         
@@ -338,11 +337,11 @@ class SyncServer:
             
         print('completed: successful sync; t=%s' % str(self.last_synced_time))
             
-            
-        self.callback_finish_sync()
-            
-            
-            
+        try:
+            self.callback_finish_sync()
+        except:
+            pass
+                    
             
             
             

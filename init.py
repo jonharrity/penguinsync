@@ -70,14 +70,14 @@ def main():
     
     if not start_headless:#normal mode:
         
+        global home, explorer
+        
         
         sync_server = syncserver.SyncServer(START_DIR, callback_finish_sync, enable_drive_service=enable_drive_service)
          
         notebook = ttk.Notebook(frame)
          
-        global home
         home = homeframe.HomeFrame(notebook, sync_server)
-        global explorer
         explorer = explorerframe.ExplorerFrame(notebook, sync_server)
          
         notebook.add(home, text="Home")

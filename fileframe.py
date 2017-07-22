@@ -137,6 +137,7 @@ class FileFrame(tk.Frame):
     def handle_folder_change(self, new_base):
         self.base_path = new_base
         self.checkbutton_changes = []
+        self.title['text'] = self.get_title_text()
         self.refresh_widgets()
         
     def refresh_widgets(self):
