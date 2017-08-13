@@ -1,13 +1,11 @@
 
 import os
-import sys
 
 import tkinter as tk
 from tkinter import ttk
 
 import syncserver
 import homeframe
-import httplib2
 import explorerframe
 
 START_DIR = os.path.dirname(os.path.realpath(__file__)) + "/data"
@@ -48,7 +46,7 @@ def create_save_files():
 def callback_finish_sync():
     global explorer
     explorer.refresh_all()
-    home.update_sync_time()
+    home.callback_finish_sync()
 
 
 
@@ -74,23 +72,21 @@ def main():
         
         
         sync_server = syncserver.SyncServer(START_DIR, callback_finish_sync, enable_drive_service=enable_drive_service)
-         
+        
         notebook = ttk.Notebook(frame)
-         
+        
         home = homeframe.HomeFrame(notebook, sync_server)
         explorer = explorerframe.ExplorerFrame(notebook, sync_server)
-         
-        notebook.add(home, text="Home")
+        
+        notebook.add(home, text="Home", sticky='nsew')
         notebook.add(explorer, text="Files")
-         
+        
         notebook.pack(fill=tk.BOTH, expand=1)
         
         frame.mainloop()
         
     else:#start headless
         
-        
-
         explorerframe.ExplorerFrame(frame).pack()
         
         print('completed: homeframe init')

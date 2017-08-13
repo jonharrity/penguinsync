@@ -1,123 +1,170 @@
 
+import tkinter as tk
+import webbrowser
 import time
 
-import tkinter as tk
-from tkinter import messagebox 
+import constants
+import driveids
 
-import activeframe
-from confirmdialog import ConfirmDialog
 
-"""
-todo
+#    TODO
+#
+# * make handle_sync_now thread safe
 
-find a better name for last_synced_time so it isn't so close to last_synced
 
-"""
 class HomeFrame(tk.Frame):
+    
     
     
     def __init__(self, master, sync_server):
         tk.Frame.__init__(self, master)
-        self['bg'] = '#eff8f9'
-        
+    
         self.sync_server = sync_server
         
-        self.add_widgets()
-        
-        self.start_sync_timer()
+        self.create_widgets()
         
         
         
-    def start_sync_timer(self):
-        import threading
-        minutes = 5
-        seconds = minutes * 60
-        threading.Timer(seconds, self.sync)
-        
-        
-    def add_widgets(self):
-        
-        cloud_sync_label = tk.Label(self, text="Penguin Sync")
-        cloud_sync_label['fg'] = 'blue'
-        cloud_sync_label['font'] = ('Arial', 17)
-        cloud_sync_label['pady'] = 30
-        cloud_sync_label.grid(row=0)
-        
-        tk.Button(self, text='about').grid(row=1)
-        tk.Button(self, text='preferences').grid(row=1, column=1, pady=20)
-        
-        self.sync_time_label = tk.Label(self)
-        self.sync_time_label.grid(row=2, column=2, sticky='E')
-        self.update_sync_time()
-        self.sync_button = tk.Button(self, text='sync now', command=self.sync)
-        self.sync_button.grid(row=3, column=2)
-        
-        tk.Label(self, text="@gmail.com").grid(row=0, column=1)        
-        
-        
-        tk.Label(self, text="Saving to drive folder Drive Client Storage").grid(row=3, pady=30)
-#         tk.Label(self, text="Syncing every 5 minutes").grid(row=3, sticky='W')
-        
+    
+    # * - * - * - *
+    # GUI CREATION
+    # * - * - * - *
 
-#         self.make_active_frame()
+    
+    
+    def create_widgets(self):
+        container = tk.Frame(self)
 
+        title_panel = self.get_title_panel(container)
+        sync_panel = self.get_sync_panel(container)
+        auth_panel = self.get_auth_panel(container)
+        
+        title_panel.grid(row=0, column=0, padx=100, sticky=tk.N)
+        sync_panel.grid(row=0, column=1, padx=100, sticky=tk.N)
+        auth_panel.grid(row=0, column=2, padx=100, sticky=tk.N)
+        
+        container.pack()
         
         
+    def get_title_panel(self, master):
+        frame = tk.Frame(master)
+        pady = 20
         
-    def update_sync_time(self):
+        title = tk.Label(frame, text='PenguinSync', font=('Arial', 22))
+        title.grid(row=0, pady=pady)
+        
+        website_button = tk.Button(frame, text='open website', command=self.handle_open_website)
+        website_button.grid(row=1, pady=pady)
+        
+        help_button = tk.Button(frame, text='open help page', command=self.handle_open_help)
+        help_button.grid(row=2, pady=pady)
+        
+        return frame
+        
+        
+    def get_sync_panel(self, master):
+        frame = tk.Frame(master)
+        pady = 20
+        
+        title = tk.Label(frame, text='Sync Details', font=('Arial', 18))
+        title.grid(row=0, pady=pady)
+        
+        last_synced = tk.Label(frame, text=self.get_last_synced_text())
+        last_synced.grid(row=1, pady=pady)
+        self.label_last_synced = last_synced
+        
+        sync_now = tk.Button(frame, text='sync now', command=self.handle_sync_now)
+        sync_now.grid(row=2, pady=pady)
+        
+        folder_name = tk.Label(frame, text='using folder on google drive:\n'+constants.DRIVE_BASE_DIR)
+        folder_name.grid(row=3, pady=pady)
+        
+        files_synced = tk.Label(frame, text=self.get_files_synced_text())
+        files_synced.grid(row=4, pady=pady)
+        
+        session_total = tk.Label(frame, text='session total upload size (MB):')
+        session_total.grid(row=5, pady=pady)
+        
+        return frame
+    
+    
+    def get_auth_panel(self, master):
+        frame = tk.Frame(master)
+        pady = 20
+        
+        title = tk.Label(frame, text='Auth Status', font=('Arial', 18))
+        title.grid(row=0, pady=pady)
+        
+        internet_status = tk.Label(frame, text='Connected to internet:')
+        internet_status.grid(row=1, pady=pady)
+        
+        login_status = tk.Label(frame, text='Logged in to google drive:')
+        login_status.grid(row=2, pady=pady)
+        
+        try:
+            if not self.is_logged_in:
+                raise Exception()
+        except:
+                login_button = tk.Button(frame, text='login')
+                login_button.grid(row=3)
+                                
+        return frame
+    
+    
+    def get_last_synced_text(self):
         last_time = self.sync_server.last_synced_time
         if type(last_time) == time.struct_time: 
-            self.sync_time_label['text'] = ('last synced: ' + 
-                    time.strftime('%m/%d %I:%M%p', 
-                    last_time))
+            time_text = time.strftime('%m/%d %I:%M%p', last_time)
         else:
-            self.sync_time_label['text'] = 'last synced:'
+            time_text = 'not yet this session'
         
-    def add_active(self, response=-1):
-        if response == -1:
-            ConfirmDialog(self, "Add new file or directory to sync", self.add_active)
-            
-        else:
-            self.sync_server.add_new_active(response)
-            self.active_frame.destroy()
-            self.active_frame = activeframe.ActiveFrame(self, self.sync_server)
+        pre = 'last synced: '
+        return pre + time_text
+    
+    def refresh_last_synced_label(self):
+        self.label_last_synced['text'] = self.get_last_synced_text()
+    
+    
+    def get_files_synced_text(self):
+        count = len(driveids.DriveIds().keys())
+        if not count: 
+            count = 'none'
+        
+        pre = 'total files being synced: '
+        return pre + str(count)
+    
+    def refresh_files_synced(self):
+        self.label_files_synced['text'] = self.get_files_synced_text()
+        
+    
+    # * - * - * - *
+    # GUI EVENTS
+    # * - * - * - *
 
-    def sync(self):
-        print('inside internal timer sync function')
-        
-        self.sync_button['state'] = 'disabled'
+    
+    def handle_sync_now(self):
         self.sync_server.sync()
-        self.sync_button['state'] = 'normal'
-        self.update_sync_time()
         
-        self.start_sync_timer()
+    def handle_open_website(self):
+        url = 'https://github.com/jonharrity/penguinsync'
+        webbrowser.open(url, 1)
         
-    def make_active_frame(self):
-        self.active_frame = activeframe.ActiveFrame(self.sync_list_frame, self.sync_server)
-        self.active_frame.grid(row=1, ipady=80)
+    def handle_open_help(self):
+        url = 'https://github.com/jonharrity/penguinsync'
+        webbrowser.open(url, 1)
         
-    def remove_active(self):
-        selected = self.active_frame.get_selected()
-        if not selected:
-            return
         
-        confirm = messagebox.askyesno("Remove sync directory", 
-                            "Confirm removing %s from active directories?"
-                            % selected)
+    # * - * - * - *
+    # EVENT CALLBACKS
+    # * - * - * - *
+
         
-        if not confirm:
-            return
-        
-        path = self.active_frame.get_selected()
-        if path == None:
-            return
-        
-        self.sync_server.remove_path_from_monitoring(path)
-        self.active_frame.destroy()
-        self.make_active_frame()
+    def callback_finish_sync(self):
+        self.refresh_last_synced_label()
         
         
         
-        
-        
-        
+
+    
+    
+    

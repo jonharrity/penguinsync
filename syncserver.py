@@ -72,7 +72,7 @@ class SyncServer:
         data = self.get_config_data()
         self.drive_parent_id = data['base_folder_id']
         
-            
+        
     def get_config_file_id(self):
         results = self.drive_service.files().list(spaces="appDataFolder", fields="files(id, name)").execute()
         items = results.get('files', [])
@@ -338,6 +338,7 @@ class SyncServer:
         print('completed: successful sync; t=%s' % str(self.last_synced_time))
             
         try:
+            # -> init.callback_finish_sync
             self.callback_finish_sync()
         except:
             pass
