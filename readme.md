@@ -13,10 +13,10 @@ There are a few unofficial clients which seek to address the afforementioned pro
 'Penguin' in the names comes from the linux mascot, a penguin, as creating a google drive client for linux is the primary goal of this application. 
 Other goals include:
 * Be free of charge
-* Provide a clear display of synced files and an easy + effective way of selecting them
+* Provide a clear display of synced files and an easy & effective way of selecting them
 * Automatic syncing -- setup once and don't worry again
 * Have a simple and fast UI
-* Minimize bandwidth usage by sending data as effiently as possible
+* Minimize bandwidth usage by sending data as efficiently as possible
 
 ### Development Status
 Penguinsync is currently under active development. Core features such as managing which files users select to sync and uploading files to Google Drive are finished; UI updates and smoothing out edges are now being worked on. 
