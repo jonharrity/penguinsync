@@ -7,6 +7,8 @@ import io
 import json
 
 import driveids, lastsynced, managedfolders
+import constants
+import socket
 
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from apiclient import discovery
@@ -19,14 +21,7 @@ import argparse
 flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
 
 
-# If modifying these scopes, delete your previously saved credentials
-# at ~/.credentials/drive-python-quickstart.json
-SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.appdata'
-CLIENT_SECRET_FILE = 'client_secret.json'
-APPLICATION_NAME = 'Drive API Python Quickstart'
 
-CONFIG_FILE_NAME = 'config.json'
-CONFIG_KEYS = ['base_folder_id']
 
 
 
@@ -40,6 +35,10 @@ todo:
         
 *    recursively add  nested subfolders (currently does not check when adding folders)
 
+
+*    verifying of files/dirs before attempting to upload
+    and in create_file: remove create file on system, should raise exception if path is nonexistent
+
 """
 
 
@@ -52,6 +51,7 @@ class SyncServer:
         self.save_path = save_path
         self.last_synced_time = 'error'
         self.callback_finish_sync = sync_callback
+        self.count_upload_total = 0
         
         self.drive_service_is_active = False
         
@@ -79,7 +79,7 @@ class SyncServer:
         files = list((item["name"], item["id"]) for item in items)
     
         for item in files:
-            if item[0] == CONFIG_FILE_NAME:
+            if item[0] == constants.CONFIG_FILE_NAME:
                 return item[1]
             
         return None
@@ -115,15 +115,15 @@ class SyncServer:
             self.drive_service_is_active = False
         
     def ask_user_login(self):
-        flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES, 'redirect.url/fromclient')
-        flow.user_agent = APPLICATION_NAME    
+        scopes = constants.DRIVE_SCOPES
+        secret_file = constants.CLIENT_SECRET_DIR
+        flow = client.flow_from_clientsecrets(secret_file, scopes, 'redirect.url/fromclient')
+        flow.user_agent = constants.APPLICATION_NAME    
             
     def get_credentials(self):
-        home_dir = os.path.expanduser('~')
-        credential_dir = os.path.join(home_dir, '.credentials')
-        if not os.path.exists(credential_dir):
-            os.makedirs(credential_dir)
-        credential_path = os.path.join(credential_dir,
+        if not os.path.exists(constants.CREDENTIAL_DIR):
+            os.makedirs(constants.CREDENTIAL_DIR)
+        credential_path = os.path.join(constants.CREDENTIAL_DIR,
                                        'drive-python-quickstart.json')
 
         store = Storage(credential_path)
@@ -133,6 +133,25 @@ class SyncServer:
             
             
         return credentials
+    
+    def is_logged_in(self):
+        try:
+            self.get_credentials()
+            return True
+        except:
+            return False
+        
+    def is_connected_to_internet(self):
+        url = 'www.google.com'
+        try:
+            host = socket.gethostbyname(url)
+            socket.create_connection((host, 80), 2)
+            return True
+        except:
+            return False
+        
+    def get_total_upload_size(self):
+        return self.count_upload_total
     
     
     def load_managed_folders(self):
@@ -195,6 +214,11 @@ class SyncServer:
     
     
     def update_file(self, path):
+#         if not os.path.isfile(path):
+#             raise Exception('Can not update [' + path + ']: file not found')
+        
+        
+        self.count_upload_total += os.path.getsize(path)
         media = MediaFileUpload(path, resumable=True)
         self.drive_service.files().update(fileId=self.drive_ids[path], media_body=media).execute()
         self.last_synced[path] = time.localtime()
@@ -202,10 +226,13 @@ class SyncServer:
     
     def create_file(self, path):
         file_size = os.path.getsize(path)
+        self.count_upload_total += file_size
+        
         if file_size == 0:
             file = open(path, 'wb')
             file.write('\n'.encode('UTF-8'))
             file.close()
+            print('created nonexistent file ' + path)
         
         media = MediaFileUpload(path, resumable=True)
         file_metadata = {
@@ -267,14 +294,11 @@ class SyncServer:
             
     def add_new_dir(self, path, do_add_all):
         
-        
         if path in self.managed_folders:
             print('requested add dir %s, but folder is already listed for syncing')
             return
         
-
         self.managed_folders.append(path)
-        
         
         if not self.drive_service_is_active:
             return
@@ -308,7 +332,6 @@ class SyncServer:
             self.last_synced[path] = time.localtime()
     
         except:
-            
             print('error while adding %s' % path)
          
     def detect_new_files(self):

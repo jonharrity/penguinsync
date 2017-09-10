@@ -13,14 +13,14 @@ class LastSynced:
             LastSynced.data = self.load()
             
     def load(self):
-        file = open(constants.START_DIR + "/lsy", 'rb')
+        file = open(constants.DATA_DIR + "/lsy", 'rb')
         last_synced = pickle.load(file)
         file.close()
         return last_synced
     
     
     def save(self):
-        file = open(constants.START_DIR + "/lsy", 'wb')
+        file = open(constants.DATA_DIR + "/lsy", 'wb')
         pickle.dump(LastSynced.data, file)
         file.close()
         

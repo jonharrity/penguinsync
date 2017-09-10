@@ -41,7 +41,7 @@ class FileFrame(tk.Frame):
 
         side_frame = tk.Frame(self)
         tk.Label(side_frame, text='').grid(row=0, rowspan=2, padx=100, pady=80)
-        tk.Checkbutton(side_frame, text='enable editing?').grid(row=2)
+#         tk.Checkbutton(side_frame, text='enable editing?').grid(row=2)
         tk.Button(side_frame, text='apply updates', command=self.apply_changes).grid(row=3)
         tk.Label(side_frame, text='updating statuses of:').grid(row=4)
         self.status_label = tk.Label(side_frame, text='')

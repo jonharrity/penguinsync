@@ -15,13 +15,13 @@ class DriveIds:
         
         
     def load(self):
-        file = open(constants.START_DIR + "/did", 'rb')
+        file = open(constants.DATA_DIR + "/did", 'rb')
         drive_ids = pickle.load(file)
         file.close()
         return drive_ids
         
     def save(self):
-        file = open(constants.START_DIR + '/did', 'wb')
+        file = open(constants.DATA_DIR + '/did', 'wb')
         pickle.dump(DriveIds.data, file)
         file.close()
         

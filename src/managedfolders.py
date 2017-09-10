@@ -14,13 +14,13 @@ class ManagedFolders:
             
             
     def load(self):
-        file = open(constants.START_DIR + "/msf", 'rb')
+        file = open(constants.DATA_DIR + "/msf", 'rb')
         managed_subfolders = pickle.load(file)
         file.close()
         return managed_subfolders   
      
     def save(self):
-        file = open(constants.START_DIR + "/msf", 'wb')
+        file = open(constants.DATA_DIR + "/msf", 'wb')
         pickle.dump(ManagedFolders.data, file)
         file.close()
         

@@ -9,6 +9,10 @@ but, for the average user who wants a small & simple backup solution, they can s
 Google has an official client for Google Drive, called Backup and Sync. However, there are a few problems with the application, such as a lack of support for linux and limited control over selecting files to sync. 
 There are a few unofficial clients which seek to address the afforementioned problems. Each have their own upsides (support for linux) and downsides (fees, no GUI).
 
+
+![screenshot](https://raw.githubusercontent.com/jonharrity/penguinsync/master/screenshot.png "Screenshot of program")
+
+
 ### Penguinsync Mission
 'Penguin' in the names comes from the linux mascot, a penguin, as creating a google drive client for linux is the primary goal of this application. 
 Other goals include:
