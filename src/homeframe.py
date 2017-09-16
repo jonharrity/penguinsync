@@ -27,6 +27,10 @@ class HomeFrame(tk.Frame):
         
         self.create_widgets()
         
+        sync_server.register_on_login(self.callback_login)
+        sync_server.register_on_logout(self.callback_logout)
+        sync_server.register_on_sync(self.callback_finish_sync)
+        
         
 
     
@@ -109,7 +113,7 @@ class HomeFrame(tk.Frame):
         label_login_status.grid(row=2, pady=pady)
         self.label_login_status = label_login_status
         
-        button_login = tk.Button(frame, text=self.get_login_button_text())
+        button_login = tk.Button(frame, text=self.get_login_button_text(), command=self.handle_login)
         button_login.grid(row=3, pady=pady)
         self.button_login = button_login
         
@@ -205,10 +209,26 @@ class HomeFrame(tk.Frame):
         url = 'https://github.com/jonharrity/penguinsync'
         webbrowser.open(url, 1)
         
+    def handle_login(self):
+        if self.sync_server.is_logged_in():
+            self.sync_server.logout()
+        else:
+            self.sync_server.login()
+        
+        self.refresh_login_label_button()
+        
+        
         
     # * - * - * - *
     # EVENT CALLBACKS
     # * - * - * - *
+    
+    
+    def callback_login(self):
+        self.refresh_login_label_button()
+    
+    def callback_logout(self):
+        self.refresh_login_label_button()
 
         
     def callback_finish_sync(self):

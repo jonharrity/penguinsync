@@ -1,12 +1,12 @@
 
 import tkinter as tk
 from tkinter import ttk
+import os
 
 import syncserver
 import homeframe
 import explorerframe
-from constants import *
-
+import constants
 
 
 
@@ -25,7 +25,7 @@ todo
 def count_save_files():
     count = 0
     for file_name in ['did', 'lsy', 'msf']:
-        path = DATA_DIR + '/' + file_name
+        path = constants.DATA_DIR + '/' + file_name
         if os.path.isfile(path):
             count += 1
     return count
@@ -36,17 +36,17 @@ def create_save_files():
     
     
     #drive_ids: dict
-    did = open(DATA_DIR + '/did', 'wb')
+    did = open(constants.DATA_DIR + '/did', 'wb')
     pickle.dump({}, did)
     did.close()
     
     #last_synced: dict
-    lsy = open(DATA_DIR + '/lsy', 'wb')
+    lsy = open(constants.DATA_DIR + '/lsy', 'wb')
     pickle.dump({}, lsy)
     lsy.close()
 
     #managed_subfolders: list
-    msf = open(DATA_DIR + '/msf', 'wb')
+    msf = open(constants.DATA_DIR + '/msf', 'wb')
     pickle.dump([], msf)
     msf.close()
 
@@ -55,14 +55,13 @@ def create_save_files():
 def callback_finish_sync():
     global explorer
     explorer.refresh_all()
-    home.callback_finish_sync()
 
 
 
 def main():
     
     start_headless = False
-    enable_drive_service = False
+    enable_drive_service = True
     
     
     if count_save_files() < 3:
@@ -80,7 +79,9 @@ def main():
         global home, explorer
         
         
-        sync_server = syncserver.SyncServer(DATA_DIR, callback_finish_sync, enable_drive_service=enable_drive_service)
+        sync_server = syncserver.SyncServer(constants.DATA_DIR, enable_drive_service=enable_drive_service)
+        sync_server.register_on_sync(callback_finish_sync)
+        
         
         ttk.Style().configure('TNotebook', background='#6fcbd6')
         notebook = ttk.Notebook(frame)

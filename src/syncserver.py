@@ -1,20 +1,16 @@
 
-import pickle
 import time
-import httplib2
 import os
 import io
 import json
+import socket
 
 import driveids, lastsynced, managedfolders
 import constants
-import socket
+import auth
 
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-from apiclient import discovery
-from oauth2client.file import Storage
 from oauth2client import tools
-from oauth2client import client
 
 
 import argparse
@@ -46,17 +42,20 @@ todo:
 class SyncServer:
     
     
-    def __init__(self, save_path, sync_callback, enable_drive_service=True):
+    def __init__(self, save_path, enable_drive_service=True):
                 
         self.save_path = save_path
         self.last_synced_time = 'error'
-        self.callback_finish_sync = sync_callback
         self.count_upload_total = 0
+        
+        self.callbacks_finish_sync = []
+        self.callbacks_on_login = []
+        self.callbacks_on_logout = []
         
         self.drive_service_is_active = False
         
         if enable_drive_service:
-            self.init_drive_service()#self.drive_service
+            self.startup_drive_service()#self.drive_service
                         
         self.drive_ids = driveids.DriveIds()
         self.last_synced = lastsynced.LastSynced()
@@ -67,6 +66,28 @@ class SyncServer:
                 
                 
         self.done_init = True
+        
+        
+        
+        
+    # * - * - * - *
+    # CALLBACK REGISTERS
+    # * - * - * - *   
+    
+    def register_on_sync(self, callback):
+        self.callbacks_finish_sync.append(callback)
+    
+    def register_on_login(self, callback):
+        self.callbacks_on_login.append(callback)
+        
+    def register_on_logout(self, callback):
+        self.callbacks_on_logout.append(callback)
+        
+        
+    # * - * - * - *
+    # CONFIG DATA on user's drive
+    # * - * - * - *
+    
         
     def load_config_data(self):
         data = self.get_config_data()
@@ -89,7 +110,7 @@ class SyncServer:
         config_file_id = self.get_config_file_id()
         
         if not config_file_id:
-            raise Exception("No config file found.")
+            config_file_id = self.init_config_file()
         
         request = self.drive_service.files().get_media(fileId=config_file_id)
         fh = io.BytesIO()
@@ -103,44 +124,60 @@ class SyncServer:
         return json.loads(data)
         
         
+    def init_config_file(self):
         
-    def init_drive_service(self):
-        try:
-            credentials = self.get_credentials()
-            http = credentials.authorize(httplib2.Http())
-            self.drive_service = discovery.build('drive', 'v3', http=http)
-            self.load_config_data()#self.drive_parent_id
-            self.drive_service_is_active = True
-        except:
+        
+    # * - * - * - *
+    # CONNECTING WITH OAUTH2.0
+    # * - * - * - *    
+    
+    
+    
+    def startup_drive_service(self):
+        auth.request_drive_service(self.resolve_drive_service)
+        
+    def resolve_drive_service(self, drive_service):
+        if drive_service:
+            self.drive_service = drive_service
+            self.load_config_data()
+            self.drive_service_is_active
+            
+            for callback in self.callbacks_on_login:
+                try:
+                    callback()
+                except:
+                    pass
+        else:
+            self.drive_service = None
             self.drive_service_is_active = False
+            
         
-    def ask_user_login(self):
-        scopes = constants.DRIVE_SCOPES
-        secret_file = constants.CLIENT_SECRET_DIR
-        flow = client.flow_from_clientsecrets(secret_file, scopes, 'redirect.url/fromclient')
-        flow.user_agent = constants.APPLICATION_NAME    
-            
-    def get_credentials(self):
-        if not os.path.exists(constants.CREDENTIAL_DIR):
-            os.makedirs(constants.CREDENTIAL_DIR)
-        credential_path = os.path.join(constants.CREDENTIAL_DIR,
-                                       'drive-python-quickstart.json')
+    
+        
+    def login(self, callback):
+        if self.is_logged_in():
+            return
 
-        store = Storage(credential_path)
-        credentials = store.get()
-        if not credentials or credentials.invalid:
-            raise Exception('no valid saved credentials')
-            
-            
-        return credentials
+        self.startup_drive_service()
+        
+    def logout(self):
+        auth.destroy_credentials()
+        self.drive_service = None
+        self.drive_service_is_active = False
+        
+        for callback in self.callbacks_on_logout:
+            try:
+                callback()
+            except:
+                pass
     
     def is_logged_in(self):
         try:
-            self.get_credentials()
-            return True
+            if self.drive_service:
+                return True
         except:
             return False
-        
+
     def is_connected_to_internet(self):
         url = 'www.google.com'
         try:
@@ -150,46 +187,15 @@ class SyncServer:
         except:
             return False
         
+    
+    # * - * - * - *
+    # SYNC TASKS
+    # * - * - * - *    
+        
+    
     def get_total_upload_size(self):
         return self.count_upload_total
     
-    
-    def load_managed_folders(self):
-        file = open(self.save_path + "/msf", 'rb')
-        managed_subfolders = pickle.load(file)
-        file.close()
-        return managed_subfolders
-    
-    def save_managed_folders(self):
-#         file = open(self.save_path + "/msf", 'wb')
-#         pickle.dump(self.managed_folders, file)
-#         file.close()
-        self.managed_folders.save()
-    
-    def load_drive_ids(self):
-        file = open(self.save_path + "/did", 'rb')
-        drive_ids = pickle.load(file)
-        file.close()
-        return drive_ids
-
-    def save_drive_ids(self):
-#         file = open(self.save_path + "/did", 'wb')
-#         pickle.dump(self.drive_ids, file)
-#         file.close()
-        self.drive_ids.save() 
-        
-    def load_last_synced(self):
-        file = open(self.save_path + "/lsy", 'rb')
-        last_synced = pickle.load(file)
-        file.close()
-        return last_synced
-    
-    def save_last_synced(self):
-#         file = open(self.save_path + "/lsy", 'wb')
-#         pickle.dump(self.last_synced, file)
-#         file.close()
-        self.last_synced.save()
-        
         
     def detect_unsynced_files(self):
         paths_to_remove = []
@@ -318,10 +324,8 @@ class SyncServer:
             print('requested add path %s, but path is already listed for syncing' % path)
             return
         
-        
         if not self.drive_service_is_active:
             return
-        
         
         try:
             new_id = self.create_file(path)
@@ -360,13 +364,11 @@ class SyncServer:
             
         print('completed: successful sync; t=%s' % str(self.last_synced_time))
             
-        try:
-            # -> init.callback_finish_sync
-            self.callback_finish_sync()
-        except:
-            pass
-                    
-            
+        for callback in self.callbacks_finish_sync:
+            try:
+                callback()
+            except:
+                pass
             
             
             
