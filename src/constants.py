@@ -16,7 +16,7 @@ LOGIN_HTML_PATH = os.path.join(SRC_DIR, 'onlogin.html')
 
 
 #ON GOOGLE DRIVE 
-DRIVE_BASE_DIR = 'Drive Client Storage'
+DRIVE_BASE_DIR = 'PenguinSync'
 DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.appdata'
 
 

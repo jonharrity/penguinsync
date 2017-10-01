@@ -60,7 +60,7 @@ def callback_finish_sync():
 
 def main():
     
-    start_headless = False
+    gui_only = False
     enable_drive_service = True
     
     
@@ -71,11 +71,16 @@ def main():
     
     frame = tk.Tk()
     frame.wm_title("Penguin Sync")
-    frame.tk_setPalette(background='#eff8f9')
-    
-    
-    if not start_headless:#normal mode:
+    frame.tk_setPalette(background='#eff8f9')        
+
         
+    if gui_only:
+        explorerframe.ExplorerFrame(frame).pack()
+        
+        print('completed: homeframe init')
+        frame.mainloop()
+        
+    else:
         global home, explorer
         
         
@@ -94,13 +99,6 @@ def main():
         
         notebook.pack(fill=tk.BOTH, expand=1)
         
-        frame.mainloop()
-        
-    else:#start headless
-        
-        explorerframe.ExplorerFrame(frame).pack()
-        
-        print('completed: homeframe init')
         frame.mainloop()
 
 

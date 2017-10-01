@@ -97,11 +97,15 @@ class SyncServer:
     def get_config_file_id(self):
         results = self.drive_service.files().list(spaces="appDataFolder", fields="files(id, name)").execute()
         items = results.get('files', [])
-        files = list((item["name"], item["id"]) for item in items)
-    
-        for item in files:
-            if item[0] == constants.CONFIG_FILE_NAME:
-                return item[1]
+#         files = list((item["name"], item["id"]) for item in items)
+#     
+#         for item in files:
+#             if item[0] == constants.CONFIG_FILE_NAME:
+#                 return item[1]
+
+        for item in items:
+            if item['name'] == constants.CONFIG_FILE_NAME:
+                return item['id']
             
         return None
     
@@ -110,7 +114,7 @@ class SyncServer:
         config_file_id = self.get_config_file_id()
         
         if not config_file_id:
-            config_file_id = self.init_config_file()
+            config_file_id = self.create_config_file()
         
         request = self.drive_service.files().get_media(fileId=config_file_id)
         fh = io.BytesIO()
@@ -124,7 +128,62 @@ class SyncServer:
         return json.loads(data)
         
         
-    def init_config_file(self):
+        
+    def create_config_file(self):
+        file_metadata = {
+            'name': constants.CONFIG_FILE_NAME,
+            'parents': ['appDataFolder']
+        }
+        
+        
+        base_id = self.find_base_folder_id()
+        if not base_id:
+            base_id = self.create_base_folder()
+        
+        
+        config_data = json.dumps({
+            'base_folder_id': base_id
+        })
+        
+        local_path = '.configtmp'
+        local_file = open(local_path, 'w')
+        local_file.write(config_data)
+        local_file.close()
+        
+        print('creating config file')
+        media = MediaFileUpload(local_path,
+                                mimetype='application/json',
+                                resumable=True)
+        file = self.drive_service.files().create(body=file_metadata,
+                                                 media_body=media,
+                                                 fields='id').execute()
+        return file.get('id')
+                                                 
+                                  
+    
+    
+    def find_base_folder_id(self):
+        q = "mimeType = 'application/vnd.google-apps.folder'"
+        q += " and name = '%s'" % constants.DRIVE_BASE_DIR                      
+                    
+        request = self.drive_service.files().list(q=q, 
+                                                  spaces='drive',
+                                                  ).execute()
+        results = request['files']
+        
+        for file in results:
+            return file['id']
+                     
+        return None
+    
+    def create_base_folder(self):
+        print('Creating base folder %s' % (constants.DRIVE_BASE_DIR))
+        file_metadata = {
+            'name': constants.DRIVE_BASE_DIR,
+            'mimeType': 'application/vnd.google-apps.folder'
+        }
+        file = self.drive_service.files().create(body=file_metadata,fields='id').execute()
+        return file.get('id')
         
         
     # * - * - * - *
@@ -133,14 +192,15 @@ class SyncServer:
     
     
     
+    #asynchronous request for drive service
     def startup_drive_service(self):
         auth.request_drive_service(self.resolve_drive_service)
         
     def resolve_drive_service(self, drive_service):
         if drive_service:
             self.drive_service = drive_service
+            self.drive_service_is_active = True
             self.load_config_data()
-            self.drive_service_is_active
             
             for callback in self.callbacks_on_login:
                 try:

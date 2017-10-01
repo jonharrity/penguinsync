@@ -1,0 +1,16 @@
+
+
+While every locally synced file is listed in /data/*, a config file containing 
+global application data is stored on a user's drive in the Application Data folder. 
+
+
+Currently the id of the folder used to store all synced files is called
+Constants.DRIVE_BASE_DIR
+and its id is stored under the attribute 'base_folder_id' in the config file.
+
+
+(json)
+{
+    'base_folder_id': id    
+
+}
