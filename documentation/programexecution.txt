@@ -1,0 +1,39 @@
+A condensed version of what happens when PenguinSync is run:
+
+
+~Part 1 (init)
+    -Check if data files exist; create them if necessary
+    ~Startup connection to Google Drive
+        -Load credentials stored on user's file system
+        -If credentials do not exist, begin the OAuth2 flow to
+            login and store the credentials
+        -Use credentials to initialize the drive service
+    
+~Part 2 (sync)
+    ~On first sync every program execution
+        -Check last update time of files on Google Drive
+        -If either the google drive version or the local version of a file is more
+            up to date, update the other
+    -Generate list of every file not up to date on the Drive
+    -Update every file on this list
+    
+~Part 3 (idle)
+    -(currently disabled) every x minutes, sync again
+    
+    
+
+Events:
+
+*(GUI) user add new folder
+    -add this folder to managed sub folders & update msf file
+    
+*(GUI) user add new file
+    -Upload this file to Google Drive, add the drive file id to 
+    -Add the new drive file id to did and current time to lsy; update lsy
+        and did
+        
+*(DRIVE) file modified on Google Drive (not yet implemented)
+    -Update the file system's version of this file
+    -Update the file's timestamp in lsy and save lsy
+
+        

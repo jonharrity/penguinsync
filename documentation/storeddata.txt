@@ -1,0 +1,24 @@
+For a description of application data stored on a user's Google Drive, see configfileondrive.txt.
+
+All other application data is stored in /data. 
+There are three files there: 'did', 'lsy', and 'msf'.
+All three files are created via python's 'pickle' functions, and contain either
+a dictionary or a list.
+
+
+-'msf':
+     -> Managed Sub Folders is a list of every folder on the user's file system
+        which contains files that are being synced.
+        
+-'did':
+     -> Drive IDs is a dictionary; each key is a full filepath on the user's file
+        system and maps to the corresponding file id on their Google Drive.
+        
+-'lsy': 
+     -> Last Synced is a dictionary; each key is a full filepath on the user's file
+        system and maps to the last time the file was updated.
+        
+        
+        
+did and lsy are of the same size and contain the same key list. There is a redundancy
+in storing this same data twice, and this issue will be resolved in the future.

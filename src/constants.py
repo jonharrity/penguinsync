@@ -1,7 +1,7 @@
 import os
 
 
-APPLICATION_NAME = 'Drive API Python Quickstart'
+APPLICATION_NAME = 'Penguin Sync'
 
 
 #PATHS

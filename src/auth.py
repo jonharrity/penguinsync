@@ -15,6 +15,7 @@ from apiclient import discovery
 
 
 
+
 def destroy_credentials():
     
     try:
@@ -83,22 +84,6 @@ def return_drive_service(credentials, callback):
 
 def get_random_state():
     return hashlib.sha256(os.urandom(1024)).hexdigest()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -11,7 +11,7 @@ import driveids
 #
 # * make handle_sync_now thread safe
 #
-# * MB : using 10^6 ; but 2^20 ???
+# * change total upload size from bytes to a smart detection of bytes, kb, or mb
 
 
 
@@ -130,12 +130,12 @@ class HomeFrame(tk.Frame):
     def get_upload_total_text(self):
         bytes_total = self.sync_server.get_total_upload_size()
         #limit decimal length, but not integer length
-        mb = str(bytes_total / 10**6)
-        mb_left = mb.split('.')[0]
-        mb_right = mb.split('.')[1]
-        mb = mb_left + '.' + mb_right[:4]
+#         mb = str(bytes_total / 10**6)
+#         mb_left = mb.split('.')[0]
+#         mb_right = mb.split('.')[1]
+#         mb = mb_left + '.' + mb_right[:4]
         
-        return 'session total upload size (MB): ' + mb
+        return 'session total upload size (bytes): ' + str(bytes_total)
     
     def refresh_upload_total_label(self):
         self.label_upload_total['text'] = self.get_upload_total_text()

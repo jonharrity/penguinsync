@@ -87,7 +87,6 @@ def main():
         sync_server = syncserver.SyncServer(constants.DATA_DIR, enable_drive_service=enable_drive_service)
         sync_server.register_on_sync(callback_finish_sync)
         
-        
         ttk.Style().configure('TNotebook', background='#6fcbd6')
         notebook = ttk.Notebook(frame)
         
@@ -98,6 +97,9 @@ def main():
         notebook.add(explorer, text="Files")
         
         notebook.pack(fill=tk.BOTH, expand=1)
+        
+        
+        sync_server.sync()
         
         frame.mainloop()
 

@@ -39,6 +39,10 @@ todo:
 
 
 
+def get_struct_time(s):#s in RFC 3339, google drive's default time format
+    return time.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
 class SyncServer:
     
     
@@ -53,17 +57,16 @@ class SyncServer:
         self.callbacks_on_logout = []
         
         self.drive_service_is_active = False
+        self.did_check_drive_files = False
         
-        if enable_drive_service:
-            self.startup_drive_service()#self.drive_service
-                        
         self.drive_ids = driveids.DriveIds()
         self.last_synced = lastsynced.LastSynced()
         self.managed_folders = managedfolders.ManagedFolders()
         
-        self.unsynced_files = set()
-        self.sync()
-                
+        if enable_drive_service:
+            self.startup_drive_service()#self.drive_service
+                    
+        self.unsynced_files = set()                
                 
         self.done_init = True
         
@@ -114,7 +117,7 @@ class SyncServer:
         config_file_id = self.get_config_file_id()
         
         if not config_file_id:
-            config_file_id = self.create_config_file()
+            return self.create_config_file()
         
         request = self.drive_service.files().get_media(fileId=config_file_id)
         fh = io.BytesIO()
@@ -129,7 +132,7 @@ class SyncServer:
         
         
         
-    def create_config_file(self):
+    def create_config_file(self):#returns uploaded config data
         file_metadata = {
             'name': constants.CONFIG_FILE_NAME,
             'parents': ['appDataFolder']
@@ -154,10 +157,10 @@ class SyncServer:
         media = MediaFileUpload(local_path,
                                 mimetype='application/json',
                                 resumable=True)
-        file = self.drive_service.files().create(body=file_metadata,
-                                                 media_body=media,
-                                                 fields='id').execute()
-        return file.get('id')
+        self.drive_service.files().create(body=file_metadata,
+                                            media_body=media,
+                                            fields='id').execute()
+        return config_data
                                                  
                                   
     
@@ -283,12 +286,12 @@ class SyncServer:
 #         if not os.path.isfile(path):
 #             raise Exception('Can not update [' + path + ']: file not found')
         
-        
         self.count_upload_total += os.path.getsize(path)
         media = MediaFileUpload(path, resumable=True)
         self.drive_service.files().update(fileId=self.drive_ids[path], media_body=media).execute()
         self.last_synced[path] = time.localtime()
     
+        print('updated %s' % path)
     
     def create_file(self, path):
         file_size = os.path.getsize(path)
@@ -408,14 +411,63 @@ class SyncServer:
                 else:
                     if not path in self.managed_folders:
                         self.add_new_dir(path)
-                        
-            
-            
+                     
+                     
+    def check_drive_files(self):
+        fields = 'name, modifiedTime'
+        did_update_lsy = False
+        for path in self.drive_ids.keys():
+            file_id = self.drive_ids[path]
+            response = None
+            try:
+                response = self.drive_service.files().get(fileId=file_id, fields=fields).execute()
+            except Exception as e:
+                print('Unable to check modification time on drive for %s' % path)
+                print(e)
+                
+            if response:
+                file_name = path.split(os.sep)[-1]
+                
+                if not response.get('name') == file_name:
+                    print('file %s on drive does not match local name %s ' % (response.get('name'),file_name))
+                
+                timestamp = time.mktime(get_struct_time(response.get('modifiedTime')))
+                diff = time.mktime(self.last_synced[path]) - timestamp
+                if diff < 0:
+#                     self.update_local_file(path)
+#                     did_update_lsy = True
+                    print('diff %s time %s' % (str(diff) , str(response.get('modifiedTime'))))
+                elif diff > 0:
+                    print('updating drive for %s' % path)
+                    self.update_file(path)
+                    did_update_lsy = True
+                    
+        if did_update_lsy:
+            self.last_synced.save()
+                
+                
+    def update_local_file(self, path):
+        request = self.drive_service.files().get_media(fileId=self.drive_ids[path])
+        local_file = open(path, 'wb')
+        downloader = MediaIoBaseDownload(local_file, request)
+        
+        done = False
+        while not done:
+            done = downloader.next_chunk()
+        
+        self.last_synced[path] = time.localtime()
+        print('updated file %s from more up to date google drive version' % path)
+        
+        
             
     def sync(self):
               
         if not self.drive_service_is_active:
             return
+        
+        if not self.did_check_drive_files:
+            self.check_drive_files()
+            self.did_check_drive_files = True
         
 #         self.detect_new_files()
         self.detect_unsynced_files()
