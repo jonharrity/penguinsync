@@ -1,0 +1,25 @@
+{
+  "name": "googlecloudclient",
+  "version": "1.0.0",
+  "description": "PenguinSync",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonharrity/penguinsync.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jonharrity/penguinsync/issues"
+  },
+  "homepage": "https://github.com/jonharrity/penguinsync#readme",
+  "dependencies": {
+    "express": "^4.16.2",
+    "fs": "0.0.1-security",
+    "path": "^0.12.7"
+  }
+}

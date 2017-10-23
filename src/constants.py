@@ -19,8 +19,12 @@ LOGIN_HTML_PATH = os.path.join(SRC_DIR, 'onlogin.html')
 DRIVE_BASE_DIR = 'PenguinSync'
 DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.appdata'
 
+AUTH_SERVER_BASE = ''
+AUTH_SERVER_PUSH = AUTH_SERVER_BASE + '/push'
+AUTH_SERVER_REDIRECT = AUTH_SERVER_BASE + '/cb'
+AUTH_SERVER_POP = AUTH_SERVER_BASE + '/pop'
 
-
+AUTH_CLIENT_ID = '402842006506-q8qjida6ob94156d7dv33r5l00n69c85.apps.googleusercontent.com'
 
 
 #not currently in use

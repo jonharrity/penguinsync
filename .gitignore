@@ -1,2 +1,4 @@
 __pycache__/
 src/client_secret.json
+src/server/secret
+node_modules/

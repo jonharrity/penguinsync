@@ -60,6 +60,7 @@ def flow_callback(code, args):
     
     if not code:
         return_drive_service(None, service_callback)
+        return
     
     credentials = flow.step2_exchange(code)
     return_drive_service(credentials, service_callback)
@@ -73,6 +74,7 @@ def request_drive_service(callback):
 def return_drive_service(credentials, callback):
     if not credentials or credentials.invalid:
         callback(None)
+        return
 
     store = Storage(constants.CREDENTIAL_PATH)
     store.put(credentials)
