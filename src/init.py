@@ -61,7 +61,6 @@ def callback_finish_sync():
 def main():
     
     gui_only = False
-    enable_drive_service = True
     
     
     if count_save_files() < 3:
@@ -84,8 +83,7 @@ def main():
         global home, explorer
         
         
-        sync_server = syncserver.SyncServer(constants.DATA_DIR, enable_drive_service=enable_drive_service)
-        sync_server.register_on_sync(callback_finish_sync)
+        sync_server = syncserver.SyncServer()
         
         ttk.Style().configure('TNotebook', background='#6fcbd6')
         notebook = ttk.Notebook(frame)
@@ -95,10 +93,13 @@ def main():
         
         notebook.add(home, text="Home", sticky='nsew')
         notebook.add(explorer, text="Files")
-        
         notebook.pack(fill=tk.BOTH, expand=1)
+
+
+        sync_server.register_on_sync(callback_finish_sync)
+        sync_server.register_manual_login(home.callback_enable_finish_login)
         
-        
+        sync_server.startup_drive_service(do_flow=False)  
         sync_server.sync()
         
         frame.mainloop()

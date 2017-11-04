@@ -24,13 +24,13 @@ class HomeFrame(tk.Frame):
         tk.Frame.__init__(self, master)
     
         self.sync_server = sync_server
+        self.is_logging_in = False
         
         self.create_widgets()
         
         sync_server.register_on_login(self.callback_login)
         sync_server.register_on_logout(self.callback_logout)
         sync_server.register_on_sync(self.callback_finish_sync)
-        
         
 
     
@@ -117,6 +117,7 @@ class HomeFrame(tk.Frame):
         button_login.grid(row=3, pady=pady)
         self.button_login = button_login
         
+        
             
                                 
         return frame
@@ -142,13 +143,17 @@ class HomeFrame(tk.Frame):
     
     
     def get_login_status_text(self):
-        if self.sync_server.is_logged_in():
+        if self.is_logging_in:
+            return 'Logging in...'
+        elif self.sync_server.is_logged_in():
             return 'Logged in to google drive'
         else:
             return 'Not logged in to google drive'
         
     def get_login_button_text(self):
-        if self.sync_server.is_logged_in():
+        if self.is_logging_in:
+            return 'Complete login'
+        elif self.sync_server.is_logged_in():
             return 'logout'
         else:
             return 'login'
@@ -210,10 +215,14 @@ class HomeFrame(tk.Frame):
         webbrowser.open(url, 1)
         
     def handle_login(self):
-        if self.sync_server.is_logged_in():
+        if self.is_logging_in:
+            self.sync_server.complete_login()
+        elif self.sync_server.is_logged_in():
             self.sync_server.logout()
         else:
             self.sync_server.login()
+            self.is_logging_in = True
+            
         
         self.refresh_login_label_button()
         
@@ -225,6 +234,9 @@ class HomeFrame(tk.Frame):
     
     
     def callback_login(self):
+        if self.is_logging_in:
+            self.is_logging_in = False
+        
         self.refresh_login_label_button()
     
     def callback_logout(self):
@@ -238,6 +250,9 @@ class HomeFrame(tk.Frame):
         self.refresh_login_label_button()
         
         
+        
+    def callback_enable_finish_login(self):
+        self.is_logging_in = True
         
 
     

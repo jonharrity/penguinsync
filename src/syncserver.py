@@ -8,6 +8,7 @@ import socket
 import driveids, lastsynced, managedfolders
 import constants
 import auth
+import authexternal
 
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 from oauth2client import tools
@@ -17,7 +18,16 @@ import argparse
 flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
 
 
+"""
+notes:
 
+must call startup_drive_service sometime after init to connect to 
+    google drive and enable sync services
+
+logging in is an asynchronous process
+
+
+"""
 
 
 
@@ -46,31 +56,26 @@ def get_struct_time(s):#s in RFC 3339, google drive's default time format
 class SyncServer:
     
     
-    def __init__(self, save_path, enable_drive_service=True):
+    def __init__(self):
                 
-        self.save_path = save_path
         self.last_synced_time = 'error'
         self.count_upload_total = 0
         
         self.callbacks_finish_sync = []
         self.callbacks_on_login = []
         self.callbacks_on_logout = []
+        self.callbacks_manual_login = []
         
         self.drive_service_is_active = False
         self.did_check_drive_files = False
+        self.logging_in_state = None
         
         self.drive_ids = driveids.DriveIds()
         self.last_synced = lastsynced.LastSynced()
         self.managed_folders = managedfolders.ManagedFolders()
-        
-        if enable_drive_service:
-            self.startup_drive_service()#self.drive_service
                     
         self.unsynced_files = set()                
-                
-        self.done_init = True
-        
-        
+                        
         
         
     # * - * - * - *
@@ -85,6 +90,9 @@ class SyncServer:
         
     def register_on_logout(self, callback):
         self.callbacks_on_logout.append(callback)
+        
+    def register_manual_login(self, callback):
+        self.callbacks_manual_login.append(callback)
         
         
     # * - * - * - *
@@ -196,8 +204,15 @@ class SyncServer:
     
     
     #asynchronous request for drive service
-    def startup_drive_service(self):
-        auth.request_drive_service(self.resolve_drive_service)
+    def startup_drive_service(self, do_flow=True):
+        if not do_flow:
+            self.resolve_drive_service(authexternal.get_service_from_file())
+        
+        elif constants.ENABLE_EXT_AUTH:
+            self.logging_in_state = authexternal.request_drive_service(self.resolve_drive_service)
+        else:
+            auth.request_drive_service(self.resolve_drive_service)
+            
         
     def resolve_drive_service(self, drive_service):
         if drive_service:
@@ -217,7 +232,7 @@ class SyncServer:
         
     
         
-    def login(self, callback):
+    def login(self):
         if self.is_logged_in():
             return
 
@@ -249,6 +264,11 @@ class SyncServer:
             return True
         except:
             return False
+        
+        
+    def complete_login(self):
+        if constants.ENABLE_EXT_AUTH:
+            authexternal.pop_ext_server(self.logging_in_state, self.resolve_drive_service)
         
     
     # * - * - * - *

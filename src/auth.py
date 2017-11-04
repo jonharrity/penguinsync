@@ -15,7 +15,6 @@ from apiclient import discovery
 
 
 
-
 def destroy_credentials():
     
     try:

@@ -19,14 +19,41 @@ LOGIN_HTML_PATH = os.path.join(SRC_DIR, 'onlogin.html')
 DRIVE_BASE_DIR = 'PenguinSync'
 DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.appdata'
 
-AUTH_SERVER_BASE = ''
+AUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
+
+AUTH_SERVER_BASE = 'https://fierce-bastion-75518.herokuapp.com'
+AUTH_SERVER_BASE_SIMPLE = 'fierce-bastion-75518.herokuapp.com'
 AUTH_SERVER_PUSH = AUTH_SERVER_BASE + '/push'
 AUTH_SERVER_REDIRECT = AUTH_SERVER_BASE + '/cb'
 AUTH_SERVER_POP = AUTH_SERVER_BASE + '/pop'
 
 AUTH_CLIENT_ID = '402842006506-q8qjida6ob94156d7dv33r5l00n69c85.apps.googleusercontent.com'
 
+USER_AGENT = 'PenguinSync/1.0 (+https://github.com/jonharrity/penguinsync)'
+
+
+
+
+
+#SETTINGS
+ENABLE_EXT_AUTH = True
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #not currently in use
 CONFIG_KEYS = ['base_folder_id']
+
 

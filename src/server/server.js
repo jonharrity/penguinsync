@@ -9,15 +9,23 @@ fs.readFile(secretPath, 'utf8', (err, data) => {
 
 
 var clientId = '402842006506-q8qjida6ob94156d7dv33r5l00n69c85.apps.googleusercontent.com';
-var redirectURI = 'unknown as fo yet lol /cb';
+var redirectURI = 'https://fierce-bastion-75518.herokuapp.com/cb';
 
 var express = require('express');
 var app = express();
 var port = (process.env.PORT || 3000);
 var maxStateStorageTime = 1000 * 60 * 5;
 
+var cbResPath = path.join(__dirname, 'cb.html');
+
 app.set('states', {});
 
+//default
+app.get('/', (req,res) => {
+	res.send('');
+});
+
+//takes query: state
 app.get('/push', (req,res) => {
 	var store = app.get('states');
 	var state = req.query.state;
@@ -37,7 +45,6 @@ app.get('/cb', (req,res) => {
 	var state = req.query.state;
 	var code = req.query.code;
 	if( typeof state === 'string' && typeof code === 'string' && (typeof store[state] != 'undefined') ) {
-		res.send('success');
 		var xhr = new XMLHttpRequest();
 		var params = [	'code='+code,
 						'client_id='+clientId,
@@ -56,6 +63,7 @@ app.get('/cb', (req,res) => {
 					var store = app.get('states');
 					var state = v.state;
 					var parsed = JSON.parse(conn.responseText);
+					//response should contain fields: access_token, expires_in, token_type, refresh_token
 					store[state] = parsed;
 					app.set('states',store);
 				}
@@ -64,9 +72,10 @@ app.get('/cb', (req,res) => {
 			};
 		}({conn: xhr, state: state});
 	}
-	else
-		res.send('unable to authorize');
+	res.sendFile(cbResPath);
 });
+
+//takes query: state
 app.get('/pop', (req,res) => {
 	var store = app.get('states');
 	var state = req.query.state;
