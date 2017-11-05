@@ -48,6 +48,9 @@ def flow_for_credentials(service_callback):
 def push_ext_server(state):
     conn = http.HTTPSConnection(constants.AUTH_SERVER_BASE_SIMPLE)  # @UndefinedVariable
     conn.request('GET','/push?state=' + state)
+    response = conn.getresponse()
+    data = response.read()
+    print('after pushing to ext: received "%s"' % data)
 
 def pop_ext_server(state, callback):
     conn = http.HTTPSConnection(constants.AUTH_SERVER_BASE_SIMPLE)  # @UndefinedVariable

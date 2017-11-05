@@ -1,7 +1,8 @@
 var fs = require('fs');
 var path = require('path');
-var secretPath = path.join(__dirname, 'secret');
-/*var clientSecret = '';
+var XMLHttpRequest = require('xmlhttprequest').XMLHTTPRequest;
+/*var secretPath = path.join(__dirname, 'secret');
+var clientSecret = '';
 fs.readFile(secretPath, 'utf8', (err, data) => {
 	if( err ) {
 		console.log(err.name+': ' + err.message);
@@ -75,8 +76,9 @@ app.get('/cb', (req,res) => {
 					console.log(conn.response);
 			};
 		}({conn: xhr, state: state});
+		res.sendFile(cbResPath);
 	}
-	res.sendFile(cbResPath);
+	res.send('');
 });
 
 //takes query: state
