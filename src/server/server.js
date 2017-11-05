@@ -1,12 +1,16 @@
 var fs = require('fs');
 var path = require('path');
 var secretPath = path.join(__dirname, 'secret');
-var clientSecret = '';
+/*var clientSecret = '';
 fs.readFile(secretPath, 'utf8', (err, data) => {
-	if( err ) throw err;
+	if( err ) {
+		console.log(err.name+': ' + err.message);
+		throw err;
+	}
 	clientSecret = data;
 });
-
+*/
+var clientSecret = process.env.CLIENT_SECRET;
 
 var clientId = '402842006506-q8qjida6ob94156d7dv33r5l00n69c85.apps.googleusercontent.com';
 var redirectURI = 'https://fierce-bastion-75518.herokuapp.com/cb';
